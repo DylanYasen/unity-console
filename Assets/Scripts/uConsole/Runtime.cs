@@ -16,7 +16,6 @@ namespace UConsole
         public KeyCode ActivationKeyBind = KeyCode.BackQuote;
 
         private string commandStr;
-        // public GUIStyle Style;
 
         Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
 
@@ -81,12 +80,9 @@ namespace UConsole
                 IsActive = !IsActive;
             }
 
-            if (IsActive)
+            if (Input.GetKeyDown(KeyCode.Return))
             {
-                if (Input.GetKeyDown(KeyCode.Return))
-                {
-                    InvokeMethod();
-                }
+                print("wtf");
             }
         }
 
@@ -131,12 +127,20 @@ namespace UConsole
 
                 if (GUI.changed)
                 {
+                    // hide search bar 
                     if (!string.IsNullOrEmpty(commandStr) && (KeyCode)commandStr.Last() == ActivationKeyBind)
                     {
                         commandStr = string.Empty;
                         IsActive = false;
                     }
                 }
+
+                // excecute command
+                if (UnityEngine.Event.current.keyCode == KeyCode.Return)
+                {
+                    IsActive = false;
+                }
+
 
                 // commandStr = GUI.TextArea(seachBarRect, commandStr);
                 // if (GUI.changed)
