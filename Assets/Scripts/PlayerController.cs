@@ -5,13 +5,13 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [Exec]
-    public void AddCoins(int amount)
+    [ConsoleCmd]
+    public static void AddCoins(int amount)
     {
         Debug.Log("added " + amount);
     }
 
-    [Exec]
+    [ConsoleCmd]
     public static void Kill()
     {
 

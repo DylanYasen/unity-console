@@ -1,6 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Threading;
+using UnityEditor;
 using UnityEngine;
 
 namespace UConsole
@@ -8,16 +12,28 @@ namespace UConsole
     public class Runtime : MonoBehaviour
     {
         public bool IsActive { get; private set; }
+
         public KeyCode ActivationKeyBind = KeyCode.BackQuote;
 
-        private Rect rect;
-        private string token;
+        private string commandStr;
+        // public GUIStyle Style;
 
-        [UnityEditor.Callbacks.DidReloadScripts]
+        Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
+
+        void Start()
+        {
+            // IEnumerable<MethodInfo> methodsInfo = GetMethodsWith<ConsoleCmd>();
+            // foreach (var methodInfo in methodsInfo)
+            // {
+            //     methods.Add(methodInfo.Name, methodInfo);
+            //     ParameterInfo[] paramsInfo = methodInfo.GetParameters();
+            // }
+        }
+
+        // [UnityEditor.Callbacks.DidReloadScripts]
         private static void OnScriptsReloaded()
         {
-            GetCache();
-            IEnumerable<MethodInfo> methods = GetMethodsWith<Exec>();
+            IEnumerable<MethodInfo> methods = GetMethodsWith<ConsoleCmd>();
             foreach (var method in methods)
             {
                 Debug.Log(method.Name);
@@ -36,34 +52,16 @@ namespace UConsole
                         methodParams[i] = 100;
                     }
                 }
-
                 // method.Invoke(invokerObj, methodParams);
             }
         }
 
-        private static Cache GetCache()
+        private Rect matchListRect;
+        private Rect searchBarRect;
+        public const float CommandConsoleHeight = 50;
+        void Awake()
         {
-            Cache cache = AssetUtility.GetAsset<Cache>("uConsole");
-            if (cache)
-            {
-                print("found cache");
-            }
-            else
-            {
-                cache = AssetUtility.CreateAsset<Cache>("uConsole");
-            }
-
-            // print("cache loaded: " + cache.CachedMethodInfo.Count());
-            
-            return cache;
-        }
-
-        /// <summary>
-        /// This function is called when the object becomes enabled and active.
-        /// </summary>
-        void OnEnable()
-        {
-            rect = new Rect(100, 100, 200, 50);
+            searchBarRect = new Rect(0, Screen.height - CommandConsoleHeight, Screen.width, CommandConsoleHeight);
         }
 
         public static IEnumerable<MethodInfo> GetMethodsWith<TAttribute>(bool inherit = true)
@@ -76,26 +74,86 @@ namespace UConsole
                    select methods;
         }
 
-        /// <summary>
-        /// Update is called every frame, if the MonoBehaviour is enabled.
-        /// </summary>
         void Update()
         {
             if (Input.GetKeyDown(ActivationKeyBind))
             {
                 IsActive = !IsActive;
             }
+
+            if (IsActive)
+            {
+                if (Input.GetKeyDown(KeyCode.Return))
+                {
+                    InvokeMethod();
+                }
+            }
         }
 
-        /// <summary>
-        /// OnGUI is called for rendering and handling GUI events.
-        /// This function can be called multiple times per frame (one call per event).
-        /// </summary>
+        string methodName;
+        object methodTarget;
+        object[] methodParams = new Object[10];
+        void InvokeMethod()
+        {
+            if (methods.ContainsKey(methodName))
+            {
+                MethodInfo method = methods[methodName];
+
+                if (method.IsStatic)
+                {
+                    methodTarget = this;
+                }
+                else
+                {
+                }
+
+                if (methodTarget != null)
+                {
+                    method.Invoke(methodTarget, methodParams);
+                }
+            }
+        }
+
+        Regex methodNameRegex;
+        const string SeachBarControlName = "SearchBarTextfield";
         void OnGUI()
         {
             if (IsActive)
             {
-                token = GUI.TextArea(rect, token);
+                GUI.FocusControl(SeachBarControlName);
+
+                GUI.SetNextControlName(SeachBarControlName);
+                var searchBarStyle = new GUIStyle(GUI.skin.textField);
+                GUI.skin.textField.fontSize = 32;
+                searchBarStyle.fixedHeight = 0;
+                searchBarStyle.fixedHeight = searchBarStyle.CalcHeight(new GUIContent(commandStr), Screen.width);
+                commandStr = GUI.TextField(new Rect(0, Screen.height - searchBarStyle.fixedHeight, Screen.width, searchBarStyle.fixedHeight), commandStr, searchBarStyle);
+
+                if (GUI.changed)
+                {
+                    if (!string.IsNullOrEmpty(commandStr) && (KeyCode)commandStr.Last() == ActivationKeyBind)
+                    {
+                        commandStr = string.Empty;
+                        IsActive = false;
+                    }
+                }
+
+                // commandStr = GUI.TextArea(seachBarRect, commandStr);
+                // if (GUI.changed)
+                // {
+                //     string[] tokens = commandStr.Split(' ');
+                //     string methodNameToken = tokens[0];
+
+                //     foreach (string methodName in methods.Keys)
+                //     {
+                //         if (Regex.IsMatch(methodName, methodNameToken))
+                //         {
+                //         }
+                //     }
+                // }
+
+                // GUI.BeginScrollView(matchListRect, Vector2.zero, matchListRect);
+                // GUI.EndScrollView();
             }
         }
     }

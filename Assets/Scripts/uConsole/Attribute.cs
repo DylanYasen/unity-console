@@ -3,7 +3,7 @@
 namespace UConsole
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public class Exec : Attribute
+    public class ConsoleCmd : Attribute
     {
     }
 }
