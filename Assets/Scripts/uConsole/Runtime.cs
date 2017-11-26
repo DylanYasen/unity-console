@@ -112,6 +112,9 @@ namespace UConsole
 
         Regex methodNameRegex;
         const string SeachBarControlName = "SearchBarTextfield";
+        Vector2 ScrollVec = Vector2.zero;
+        int SelectedEntry = 0;
+        string[] test = { "1", "2" };
         void OnGUI()
         {
             if (IsActive)
@@ -141,6 +144,18 @@ namespace UConsole
                     IsActive = false;
                 }
 
+                // search result scrollview
+                float ScrollHeight = 300;
+                float ScrollStartY = Screen.height - searchBarStyle.fixedHeight - ScrollHeight;
+
+                GUI.Box(new Rect(0, ScrollStartY, Screen.width, ScrollHeight), "");
+                GUI.BeginScrollView(new Rect(0, ScrollStartY, Screen.width, ScrollHeight), ScrollVec, new Rect(0, 0, Screen.width, ScrollHeight));
+
+                for (int i = 0; i < 20; i++)
+                {
+                    GUI.Label(new Rect(0, i * 50, Screen.width, 50), "start game");
+                }
+                GUI.EndScrollView();
 
                 // commandStr = GUI.TextArea(seachBarRect, commandStr);
                 // if (GUI.changed)
