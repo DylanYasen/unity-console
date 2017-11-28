@@ -21,12 +21,12 @@ namespace UConsole
 
         void Start()
         {
-            // IEnumerable<MethodInfo> methodsInfo = GetMethodsWith<ConsoleCmd>();
-            // foreach (var methodInfo in methodsInfo)
-            // {
-            //     methods.Add(methodInfo.Name, methodInfo);
-            //     ParameterInfo[] paramsInfo = methodInfo.GetParameters();
-            // }
+            IEnumerable<MethodInfo> methodsInfo = GetMethodsWith<ConsoleCmd>();
+            foreach (var methodInfo in methodsInfo)
+            {
+                methods.Add(methodInfo.Name, methodInfo);
+                // ParameterInfo[] paramsInfo = methodInfo.GetParameters();
+            }
         }
 
         // [UnityEditor.Callbacks.DidReloadScripts]
@@ -56,12 +56,7 @@ namespace UConsole
         }
 
         private Rect matchListRect;
-        private Rect searchBarRect;
         public const float CommandConsoleHeight = 50;
-        void Awake()
-        {
-            searchBarRect = new Rect(0, Screen.height - CommandConsoleHeight, Screen.width, CommandConsoleHeight);
-        }
 
         public static IEnumerable<MethodInfo> GetMethodsWith<TAttribute>(bool inherit = true)
             where TAttribute : System.Attribute
@@ -78,11 +73,6 @@ namespace UConsole
             if (Input.GetKeyDown(ActivationKeyBind))
             {
                 IsActive = !IsActive;
-            }
-
-            if (Input.GetKeyDown(KeyCode.Return))
-            {
-                print("wtf");
             }
         }
 
@@ -112,9 +102,13 @@ namespace UConsole
 
         Regex methodNameRegex;
         const string SeachBarControlName = "SearchBarTextfield";
-        Vector2 ScrollVec = Vector2.zero;
-        int SelectedEntry = 0;
-        string[] test = { "1", "2" };
+
+        int selectedEntry = -1;
+        Vector2 scrollVec = Vector2.zero;
+        const float scrollHeight = 300;
+        const float searchResultLabelHeight = 50;
+        List<string> searchResult = new List<string>();
+
         void OnGUI()
         {
             if (IsActive)
@@ -130,30 +124,68 @@ namespace UConsole
 
                 if (GUI.changed)
                 {
-                    // hide search bar 
-                    if (!string.IsNullOrEmpty(commandStr) && (KeyCode)commandStr.Last() == ActivationKeyBind)
+                    if (!string.IsNullOrEmpty(commandStr))
                     {
-                        commandStr = string.Empty;
-                        IsActive = false;
+                        // toggle search bar 
+                        if ((KeyCode)commandStr.Last() == ActivationKeyBind)
+                        {
+                            commandStr = string.Empty;
+                            IsActive = false;
+                        }
+                        else
+                        {
+                            //@todo: state of parser
+                            foreach (string methodName in methods.Keys)
+                            {
+                                if (methodName.ToLower().Contains(commandStr.ToLower()) && !searchResult.Contains(methodName))
+                                {
+                                    searchResult.Add(methodName);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        searchResult.Clear();
+                    }
+
+                    // navigate through search result
+                    if (Event.current.keyCode == KeyCode.UpArrow)
+                    {
+                        selectedEntry--;
+                        if (selectedEntry < 0)
+                        {
+                            selectedEntry = searchResult.Count - 1;
+                        }
+                    }
+                    else if (Event.current.keyCode == KeyCode.DownArrow)
+                    {
+                        selectedEntry++;
+                        if (selectedEntry >= searchResult.Count)
+                        {
+                            selectedEntry = 0;
+                        }
                     }
                 }
 
                 // excecute command
-                if (UnityEngine.Event.current.keyCode == KeyCode.Return)
+                if (Event.current.type == EventType.keyDown)
                 {
-                    IsActive = false;
+                    if (Event.current.keyCode == KeyCode.Return)
+                    {
+                        IsActive = false;
+                    }
                 }
 
                 // search result scrollview
-                float ScrollHeight = 300;
-                float ScrollStartY = Screen.height - searchBarStyle.fixedHeight - ScrollHeight;
-
-                GUI.Box(new Rect(0, ScrollStartY, Screen.width, ScrollHeight), "");
-                GUI.BeginScrollView(new Rect(0, ScrollStartY, Screen.width, ScrollHeight), ScrollVec, new Rect(0, 0, Screen.width, ScrollHeight));
-
-                for (int i = 0; i < 20; i++)
+                float ScrollStartY = Screen.height - searchBarStyle.fixedHeight - scrollHeight;
+                GUI.Box(new Rect(0, ScrollStartY, Screen.width, scrollHeight), string.Empty);
+                GUI.skin.label.fontSize = 24;
+                scrollVec = GUI.BeginScrollView(new Rect(0, ScrollStartY, Screen.width, scrollHeight), scrollVec, new Rect(0, 0, Screen.width, searchResultLabelHeight * searchResult.Count));
+                for (int i = 0; i < searchResult.Count; i++)
                 {
-                    GUI.Label(new Rect(0, i * 50, Screen.width, 50), "start game");
+                    GUI.color = (selectedEntry == i) ? Color.yellow : Color.white;
+                    GUI.Label(new Rect(0, i * searchResultLabelHeight, Screen.width, searchResultLabelHeight), searchResult[i]);
                 }
                 GUI.EndScrollView();
 
