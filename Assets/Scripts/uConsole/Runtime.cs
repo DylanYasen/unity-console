@@ -225,7 +225,7 @@ namespace UConsole
                     // select search result
                     else if (Event.current.keyCode == KeyCode.Tab)
                     {
-                        if (searchResult.Count < selectedEntry) { return; }
+                        if (searchResult.Count <= selectedEntry) { return; }
                         commandStr = searchResult[selectedEntry];
                     }
                 }

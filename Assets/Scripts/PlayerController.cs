@@ -8,7 +8,13 @@ public class PlayerController : MonoBehaviour
     [ConsoleCmd]
     public static void AddCoins(int amount, string name)
     {
-        Debug.Log("added " + amount + " for " + name);
+        Debug.Log("added " + amount + "coins for " + name);
+    }
+
+    [ConsoleCmd]
+    public static void AddHP(int amount)
+    {
+        Debug.Log("added " + amount);
     }
 
     [ConsoleCmd]
