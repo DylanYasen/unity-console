@@ -18,6 +18,7 @@ namespace UConsole
         private string commandStr;
 
         Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
+        Dictionary<string, ParameterInfo[]> methodParameters = new Dictionary<string, ParameterInfo[]>();
 
         void Start()
         {
@@ -25,38 +26,15 @@ namespace UConsole
             foreach (var methodInfo in methodsInfo)
             {
                 methods.Add(methodInfo.Name, methodInfo);
-                // ParameterInfo[] paramsInfo = methodInfo.GetParameters();
+                methodParameters.Add(methodInfo.Name, methodInfo.GetParameters());
             }
         }
 
         // [UnityEditor.Callbacks.DidReloadScripts]
         private static void OnScriptsReloaded()
         {
-            IEnumerable<MethodInfo> methods = GetMethodsWith<ConsoleCmd>();
-            foreach (var method in methods)
-            {
-                Debug.Log(method.Name);
-                // Debug.Log(method.GetType());
-                // Debug.Log(method.MemberType);	
-                // Debug.Log(method.ReflectedType);
-                ParameterInfo[] paramsInfo = method.GetParameters();
-                System.Object[] methodParams = new System.Object[paramsInfo.Count()];
-                // System.Object invokerObj = method.IsStatic ? this : FindObjectOfType(method.ReflectedType);
-
-                for (int i = 0; i < paramsInfo.Count(); i++)
-                {
-                    ParameterInfo paramInfo = paramsInfo[i];
-                    if (paramInfo.ParameterType == typeof(int))
-                    {
-                        methodParams[i] = 100;
-                    }
-                }
-                // method.Invoke(invokerObj, methodParams);
-            }
         }
 
-        private Rect matchListRect;
-        public const float CommandConsoleHeight = 50;
 
         public static IEnumerable<MethodInfo> GetMethodsWith<TAttribute>(bool inherit = true)
             where TAttribute : System.Attribute
@@ -76,21 +54,67 @@ namespace UConsole
             }
         }
 
-        string methodName;
-        object methodTarget;
-        object[] methodParams = new Object[10];
-        void InvokeMethod()
+        void InvokeMethod(string commandStr)
         {
+            string[] tokens = commandStr.Split(' ');
+            if (tokens.Length < 1) { return; }
+
+            object methodTarget = null;
+            string methodName = tokens[0];
             if (methods.ContainsKey(methodName))
             {
+                int paramStartIndex = 0;
                 MethodInfo method = methods[methodName];
 
+                // determine method target
                 if (method.IsStatic)
                 {
                     methodTarget = this;
+                    paramStartIndex = 1;
                 }
                 else
                 {
+                    Debug.LogWarning("uConsole: non-static methods are not supported yet.");
+                    return;
+                    // if (tokens.Length < 2) return;
+                    // string targetObjName = tokens[1];
+
+                    // // find the correct target to invoke the method
+                    // GameObject TargetGameObj = GameObject.Find(targetObjName);
+                    // if (TargetGameObj != null && methodTarget.GetType() != method.ReflectedType)
+                    // {
+                    //     methodTarget = TargetGameObj.GetComponent(method.ReflectedType);
+                    // }
+                    // paramStartIndex = 2;
+                }
+
+                // parse parameters
+                if (!methodParameters.ContainsKey(methodName)) { return; }
+                ParameterInfo[] paramInfos = methodParameters[methodName];
+                object[] methodParams = new object[paramInfos.Length];
+                for (int i = 0; i < paramInfos.Length; i++)
+                {
+                    ParameterInfo paramInfo = paramInfos[i];
+
+                    if (tokens.Length <= paramStartIndex + i)
+                    {
+                        Debug.LogWarning("uConsole: not enough parameters provided");
+                        break;
+                    }
+                    string paramStr = tokens[paramStartIndex + i];
+
+                    if (paramInfo.ParameterType == typeof(int))
+                    {
+                        methodParams[i] = int.Parse(paramStr);
+                    }
+                    else if (paramInfo.ParameterType == typeof(float))
+                    {
+                        methodParams[i] = float.Parse(paramStr);
+                    }
+                    else if (paramInfo.ParameterType == typeof(string))
+                    {
+                        methodParams[i] = paramStr;
+                    }
                 }
 
                 if (methodTarget != null)
@@ -98,6 +122,46 @@ namespace UConsole
                     method.Invoke(methodTarget, methodParams);
                 }
             }
+        }
+
+        void RefreshSearchResult(string commandStr)
+        {
+            //@todo: state of parser
+            foreach (string methodName in methods.Keys)
+            {
+                if (methodName.ToLower().Contains(commandStr.ToLower()) && !searchResult.Contains(methodName))
+                {
+                    searchResult.Add(methodName);
+                }
+            }
+        }
+
+        void NavigateSearchResult(KeyCode dirKey)
+        {
+            if (dirKey == KeyCode.UpArrow)
+            {
+                selectedEntry--;
+                if (selectedEntry < 0)
+                {
+                    selectedEntry = searchResult.Count - 1;
+                }
+            }
+            else if (dirKey == KeyCode.DownArrow)
+            {
+                selectedEntry++;
+                if (selectedEntry >= searchResult.Count)
+                {
+                    selectedEntry = 0;
+                }
+            }
+        }
+
+        void CloseConsole()
+        {
+            IsActive = false;
+            selectedEntry = -1;
+            commandStr = string.Empty;
+            searchResult.Clear();
         }
 
         Regex methodNameRegex;
@@ -129,19 +193,11 @@ namespace UConsole
                         // toggle search bar 
                         if ((KeyCode)commandStr.Last() == ActivationKeyBind)
                         {
-                            commandStr = string.Empty;
-                            IsActive = false;
+                            CloseConsole();
                         }
                         else
                         {
-                            //@todo: state of parser
-                            foreach (string methodName in methods.Keys)
-                            {
-                                if (methodName.ToLower().Contains(commandStr.ToLower()) && !searchResult.Contains(methodName))
-                                {
-                                    searchResult.Add(methodName);
-                                }
-                            }
+                            RefreshSearchResult(commandStr);
                         }
                     }
                     else
@@ -150,30 +206,27 @@ namespace UConsole
                     }
 
                     // navigate through search result
-                    if (Event.current.keyCode == KeyCode.UpArrow)
+                    if (Event.current.keyCode == KeyCode.UpArrow || Event.current.keyCode == KeyCode.DownArrow)
                     {
-                        selectedEntry--;
-                        if (selectedEntry < 0)
-                        {
-                            selectedEntry = searchResult.Count - 1;
-                        }
-                    }
-                    else if (Event.current.keyCode == KeyCode.DownArrow)
-                    {
-                        selectedEntry++;
-                        if (selectedEntry >= searchResult.Count)
-                        {
-                            selectedEntry = 0;
-                        }
+                        NavigateSearchResult(Event.current.keyCode);
                     }
                 }
 
-                // excecute command
-                if (Event.current.type == EventType.keyDown)
+                // keyboard interaction
+                if (Event.current.type == EventType.KeyUp)
                 {
+                    // excecute command
                     if (Event.current.keyCode == KeyCode.Return)
                     {
-                        IsActive = false;
+                        InvokeMethod(commandStr);
+
+                        CloseConsole();
+                    }
+                    // select search result
+                    else if (Event.current.keyCode == KeyCode.Tab)
+                    {
+                        if (searchResult.Count < selectedEntry) { return; }
+                        commandStr = searchResult[selectedEntry];
                     }
                 }
 
@@ -188,23 +241,6 @@ namespace UConsole
                     GUI.Label(new Rect(0, i * searchResultLabelHeight, Screen.width, searchResultLabelHeight), searchResult[i]);
                 }
                 GUI.EndScrollView();
-
-                // commandStr = GUI.TextArea(seachBarRect, commandStr);
-                // if (GUI.changed)
-                // {
-                //     string[] tokens = commandStr.Split(' ');
-                //     string methodNameToken = tokens[0];
-
-                //     foreach (string methodName in methods.Keys)
-                //     {
-                //         if (Regex.IsMatch(methodName, methodNameToken))
-                //         {
-                //         }
-                //     }
-                // }
-
-                // GUI.BeginScrollView(matchListRect, Vector2.zero, matchListRect);
-                // GUI.EndScrollView();
             }
         }
     }
