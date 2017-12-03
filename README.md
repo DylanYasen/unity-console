@@ -19,13 +19,16 @@ uConsole is a runtime command console for Unity3D
 ```
 
 - during runtime, press [`] to toggle the command console interface
+- press [Tab] to auto complete
+- [Return] to excecute command
 
 <img src="https://media.giphy.com/media/3ohs7LXMnbuafYTRao/giphy.gif">
 
 ## Roadmap
-- [x] excecute static methods
-- [ ] excecute non-static methods
-- [x] primitive type parameter
-- [ ] non-primitive type parameter
+- [x] execute static methods
+- [ ] execute non-static methods
+- [x] primitive type parameters
+- [ ] non-primitive type parameters
 - [ ] UI indicator for method target type
 - [ ] UI indicator for parameter type
+- [ ] Optimize reflection (caching mechanism or thread or ?)
