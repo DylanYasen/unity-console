@@ -11,21 +11,20 @@ namespace UConsole
 {
     public class Runtime : MonoBehaviour
     {
-        public bool IsActive { get; private set; }
-
         public KeyCode ActivationKeyBind = KeyCode.BackQuote;
 
+        private bool isActive;
         private string commandStr;
 
-        Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
-        Dictionary<string, ParameterInfo[]> methodParameters = new Dictionary<string, ParameterInfo[]>();
+        private Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
+        private Dictionary<string, ParameterInfo[]> methodParameters = new Dictionary<string, ParameterInfo[]>();
 
-        int selectedEntry = -1;
-        const string seachBarControlName = "SearchBarTextfield";
-        const int maxSearchResultCount = 10;
-        Vector2 scrollVec = Vector2.zero;
-        const float searchResultLabelHeight = 50;
-        List<string> searchResult = new List<string>();
+        private const string seachBarControlName = "SearchBarTextfield";
+        private const int maxSearchResultCount = 10;
+        private const float searchResultLabelHeight = 50;
+        private int selectedEntry = -1;
+        private Vector2 scrollVec = Vector2.zero;
+        private List<string> searchResult = new List<string>();
 
         void Start()
         {
@@ -57,7 +56,7 @@ namespace UConsole
         {
             if (Input.GetKeyDown(ActivationKeyBind))
             {
-                IsActive = !IsActive;
+                isActive = !isActive;
             }
         }
 
@@ -161,11 +160,12 @@ namespace UConsole
                     selectedEntry = 0;
                 }
             }
+            scrollVec.y = selectedEntry * searchResultLabelHeight;
         }
 
         void CloseConsole()
         {
-            IsActive = false;
+            isActive = false;
             selectedEntry = -1;
             commandStr = string.Empty;
             searchResult.Clear();
@@ -173,7 +173,7 @@ namespace UConsole
 
         void OnGUI()
         {
-            if (IsActive)
+            if (isActive)
             {
                 GUI.FocusControl(seachBarControlName);
 
