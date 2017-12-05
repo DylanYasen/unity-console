@@ -20,6 +20,13 @@ namespace UConsole
         Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
         Dictionary<string, ParameterInfo[]> methodParameters = new Dictionary<string, ParameterInfo[]>();
 
+        int selectedEntry = -1;
+        const string seachBarControlName = "SearchBarTextfield";
+        const int maxSearchResultCount = 10;
+        Vector2 scrollVec = Vector2.zero;
+        const float searchResultLabelHeight = 50;
+        List<string> searchResult = new List<string>();
+
         void Start()
         {
             IEnumerable<MethodInfo> methodsInfo = GetMethodsWith<ConsoleCmd>();
@@ -164,22 +171,13 @@ namespace UConsole
             searchResult.Clear();
         }
 
-        Regex methodNameRegex;
-        const string SeachBarControlName = "SearchBarTextfield";
-
-        int selectedEntry = -1;
-        Vector2 scrollVec = Vector2.zero;
-        const float scrollHeight = 300;
-        const float searchResultLabelHeight = 50;
-        List<string> searchResult = new List<string>();
-
         void OnGUI()
         {
             if (IsActive)
             {
-                GUI.FocusControl(SeachBarControlName);
+                GUI.FocusControl(seachBarControlName);
 
-                GUI.SetNextControlName(SeachBarControlName);
+                GUI.SetNextControlName(seachBarControlName);
                 var searchBarStyle = new GUIStyle(GUI.skin.textField);
                 GUI.skin.textField.fontSize = 32;
                 searchBarStyle.fixedHeight = 0;
@@ -231,10 +229,12 @@ namespace UConsole
                 }
 
                 // search result scrollview
-                float ScrollStartY = Screen.height - searchBarStyle.fixedHeight - scrollHeight;
-                GUI.Box(new Rect(0, ScrollStartY, Screen.width, scrollHeight), string.Empty);
+                float searchResultHeight = searchResultLabelHeight * searchResult.Count;
+                float clampedResultHeight = Mathf.Clamp(searchResultHeight, 0, maxSearchResultCount * searchResultLabelHeight);
+                float scrollStartY = Screen.height - searchBarStyle.fixedHeight - clampedResultHeight;
+                GUI.Box(new Rect(0, scrollStartY, Screen.width, clampedResultHeight), string.Empty);
                 GUI.skin.label.fontSize = 24;
-                scrollVec = GUI.BeginScrollView(new Rect(0, ScrollStartY, Screen.width, scrollHeight), scrollVec, new Rect(0, 0, Screen.width, searchResultLabelHeight * searchResult.Count));
+                scrollVec = GUI.BeginScrollView(new Rect(0, scrollStartY, Screen.width, clampedResultHeight), scrollVec, new Rect(0, 0, Screen.width, searchResultHeight));
                 for (int i = 0; i < searchResult.Count; i++)
                 {
                     GUI.color = (selectedEntry == i) ? Color.yellow : Color.white;
