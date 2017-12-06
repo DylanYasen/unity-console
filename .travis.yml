@@ -13,8 +13,9 @@ after_success:
 - "./BuildScripts/exportPackage.sh"
 
 before_deploy:
+- echo $PWD
 - cd ~
-- cd $TRAVIS_BUILD_DIR
+- echo $PWD
 
 deploy:
   provider: releases
