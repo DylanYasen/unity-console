@@ -1,3 +1,4 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/11b2441d38ec474fb1f5d5c2ece6ed3d)](https://www.codacy.com/app/DylanYasen/unity-console?utm_source=github.com&utm_medium=referral&utm_content=DylanYasen/unity-console&utm_campaign=badger)
 # unity-console [![Build Status](https://travis-ci.org/DylanYasen/unity-console.svg?branch=0.1)](https://travis-ci.org/DylanYasen/unity-console)
 uConsole is a runtime command console for Unity3D
 
