@@ -1,4 +1,4 @@
-# unity-console
+# unity-console [![Build Status](https://travis-ci.org/DylanYasen/unity-console.svg?branch=0.1)](https://travis-ci.org/DylanYasen/unity-console)
 uConsole is a runtime command console for Unity3D
 
 ## Instructions
