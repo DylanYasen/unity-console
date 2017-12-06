@@ -12,16 +12,11 @@ install:
 after_success:
 - "./BuildScripts/exportPackage.sh"
 
-before_deploy:
-- echo $PWD
-- cd ~
-- echo $PWD
-
 deploy:
   provider: releases
   api_key:
     secure: hjyf6a71tZcrtfBFec42JR9GkxF1HkTFSwxIP0vP6V6BlBPRywuV+/d94q45xTr73sp+3ckUC2AzX0czwL+6DYseg1UcvJC6uFTToLfZyoxQ4J3wwejm/sXLxltcgeGAJ7JNEr+nvSt+7OpPbvmvgBJNxbVFgH27icFaqHA/jfhCm2hfFJpdbjoZY2ltRY1Xkpfqw8FBDIxQEHc/USrhSGU7Q7qqNFG2X7E9SEGk6GNHdFBmHQjWGpFeb4ApMWIHt3HGr/KeqA6kvdL8FIqPgAd9B9ykpSRiWM/syox4dDGMnRD/3TPmd27sWD8ofAoZaQzzA6Uc7BeZS+HMDkRLIa2jyfzWroiy/YBNTLCZHQYYKehShgFQ8R5KdWyPG7rXZoKJdTSZFNllCiQNuknqRWUUBRs78ZCU4UZTtDaURb4NiuPHi3OX6n5KJfLcRXZQ8Nc2gmwdQ795ExKBdj5+DDiMLExlR1OBJWjT2d9cyua9s+vODKckREeE35lUz8ndqWsAFj3tsgPxnvGPQCV1cBRx/z5fBWBFuAMQC0JawYjKDRpvP4rj0IJZtt0tWBngp/OPfXLXmsRjp00F81izXYqEOfye8lWm1zChQjGCMmSu5khHbY68K/CgqNmSwKWbpG3NJNBM2UXI34JYcVIMEQ63P7IRVh5wEZX/gcwQN8Y=
-  file: "./build/uConsole.unitypackage"
+  file: "build/uConsole.unitypackage"
   skip_cleanup: true
   on:
     repo: DylanYasen/unity-console
