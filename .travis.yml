@@ -12,6 +12,10 @@ install:
 after_success:
 - "./BuildScripts/exportPackage.sh"
 
+before_deploy:
+- cd ~
+- cd $TRAVIS_BUILD_DIR
+
 deploy:
   provider: releases
   api_key:
