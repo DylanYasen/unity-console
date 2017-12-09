@@ -1,6 +1,4 @@
 language: objective-c
-rvm:
-- 2.2
 
 cache:
   directories:
@@ -14,6 +12,9 @@ install:
 
 after_success:
 - "./BuildScripts/exportPackage.sh"
+
+before_deploy:
+  - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
 
 deploy:
   provider: releases
