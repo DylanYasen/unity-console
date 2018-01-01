@@ -4,14 +4,11 @@ cache:
   directories:
   - ./Unity
 
-before_install:
-- chmod a+x ./BuildScripts/*.sh
-
 install:
-- ./BuildScripts/installUnity.sh
+- sh ./BuildScripts/installUnity.sh
 
 after_success:
-- ./BuildScripts/exportPackage.sh
+- sh ./BuildScripts/exportPackage.sh
 
 before_deploy:
   - pwd & ls
