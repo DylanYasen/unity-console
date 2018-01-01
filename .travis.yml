@@ -4,16 +4,16 @@ cache:
   directories:
   - ./Unity
 
+before_install:
+- chmod a+x ./BuildScripts/*.sh
+
 install:
-- sh ./BuildScripts/installUnity.sh
+- ./BuildScripts/installUnity.sh
 
 after_success:
-- sh ./BuildScripts/exportPackage.sh
+- ./BuildScripts/exportPackage.sh
 
 before_deploy:
-  - pwd & ls
-  - cd BuildScripts && ls && cd ..
-  - cd build && ls && cd ..
   - git tag "$(date +'%Y%m%d')-$(git log --format=%h -1)"
 
 deploy:

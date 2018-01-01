@@ -5,6 +5,11 @@ library_name=uConsole
 
 error_code=0
 
+if [ ! -f "build" ] ; then
+  echo "no build folder found. creating one."
+  mkdir "build"
+fi
+
 echo "Creating package."
 /Applications/Unity/Unity.app/Contents/MacOS/Unity \
   -batchmode \
