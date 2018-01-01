@@ -2,19 +2,20 @@ language: objective-c
 
 cache:
   directories:
-  - "./Unity"
+  - ./Unity
 
 before_install:
 - chmod a+x ./BuildScripts/*.sh
 
 install:
-- "./BuildScripts/installUnity.sh"
+- ./BuildScripts/installUnity.sh
 
 after_success:
-- "./BuildScripts/exportPackage.sh"
+- ./BuildScripts/exportPackage.sh
 
 before_deploy:
   - pwd & ls
+  - cd BuildScripts && ls && cd ..
   - cd build && ls && cd ..
   - git tag "$(date +'%Y%m%d')-$(git log --format=%h -1)"
 
