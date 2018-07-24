@@ -31,4 +31,4 @@ uConsole is a runtime command console for Unity3D
 - [ ] non-primitive type parameters
 - [ ] UI indicator for method target type
 - [ ] UI indicator for parameter type
-- [ ] Optimize reflection (caching mechanism or thread or ?)
+- [x] Optimize initialiation
