@@ -9,65 +9,79 @@ using UnityEngine;
 
 namespace UConsole
 {
-    public class Runtime : MonoBehaviour
+    public class DebugConsoleRuntime : MonoBehaviour
     {
         public KeyCode ActivationKeyBind = KeyCode.BackQuote;
 
         private bool isActive;
         private string commandStr;
 
-        private Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo>();
-        private Dictionary<string, ParameterInfo[]> methodParameters = new Dictionary<string, ParameterInfo[]>();
+        private Dictionary<string, MethodInfo> methods = new Dictionary<string, MethodInfo> ();
+        private Dictionary<string, ParameterInfo[]> methodParameters = new Dictionary<string, ParameterInfo[]> ();
 
         private const string seachBarControlName = "SearchBarTextfield";
         private const int maxSearchResultCount = 10;
         private const float searchResultLabelHeight = 50;
         private int selectedEntry = -1;
         private Vector2 scrollVec = Vector2.zero;
-        private List<string> searchResult = new List<string>();
+        private List<string> searchResult = new List<string> ();
 
-        void Start()
+        bool threadRunning;
+        Thread thread;
+
+        void Start ()
         {
-            IEnumerable<MethodInfo> methodsInfo = GetMethodsWith<ConsoleCmd>();
+            thread = new Thread (LoadMethods);
+            thread.Start();
+        }
+
+        void LoadMethods ()
+        {
+            threadRunning = true;
+
+            IEnumerable<MethodInfo> methodsInfo = GetMethodsWith<ConsoleCmd> ();
             foreach (var methodInfo in methodsInfo)
             {
-                methods.Add(methodInfo.Name, methodInfo);
-                methodParameters.Add(methodInfo.Name, methodInfo.GetParameters());
+                methods.Add (methodInfo.Name, methodInfo);
+                methodParameters.Add (methodInfo.Name, methodInfo.GetParameters ());
             }
+            threadRunning = false;
         }
 
         // [UnityEditor.Callbacks.DidReloadScripts]
-        private static void OnScriptsReloaded()
+        private static void OnScriptsReloaded () { }
+
+        public static IEnumerable<MethodInfo> GetMethodsWith<TAttribute> (bool inherit = true)
+        where TAttribute : System.Attribute
         {
+            return from assemblies in System.AppDomain.CurrentDomain.GetAssemblies ()
+            from types in assemblies.GetTypes ()
+            from methods in types.GetMethods ()
+            where methods.IsDefined (typeof (TAttribute), inherit)
+            select methods;
         }
 
-
-        public static IEnumerable<MethodInfo> GetMethodsWith<TAttribute>(bool inherit = true)
-            where TAttribute : System.Attribute
+        void Update ()
         {
-            return from assemblies in System.AppDomain.CurrentDomain.GetAssemblies()
-                   from types in assemblies.GetTypes()
-                   from methods in types.GetMethods()
-                   where methods.IsDefined(typeof(TAttribute), inherit)
-                   select methods;
-        }
-
-        void Update()
-        {
-            if (Input.GetKeyDown(ActivationKeyBind))
+            if (Input.GetKeyDown (ActivationKeyBind))
             {
+                if (threadRunning)
+                {
+                    Debug.LogWarning ("console runtime is still initializing");
+                    return;
+                }
                 isActive = !isActive;
             }
         }
 
-        void InvokeMethod(string commandStr)
+        void InvokeMethod (string commandStr)
         {
-            string[] tokens = commandStr.Split(' ');
+            string[] tokens = commandStr.Split (' ');
             if (tokens.Length < 1) { return; }
 
             object methodTarget = null;
             string methodName = tokens[0];
-            if (methods.ContainsKey(methodName))
+            if (methods.ContainsKey (methodName))
             {
                 int paramStartIndex = 0;
                 MethodInfo method = methods[methodName];
@@ -80,7 +94,7 @@ namespace UConsole
                 }
                 else
                 {
-                    Debug.LogWarning("uConsole: non-static methods are not supported yet.");
+                    Debug.LogWarning ("uConsole: non-static methods are not supported yet.");
                     return;
                     // if (tokens.Length < 2) return;
                     // string targetObjName = tokens[1];
@@ -95,7 +109,7 @@ namespace UConsole
                 }
 
                 // parse parameters
-                if (!methodParameters.ContainsKey(methodName)) { return; }
+                if (!methodParameters.ContainsKey (methodName)) { return; }
                 ParameterInfo[] paramInfos = methodParameters[methodName];
                 object[] methodParams = new object[paramInfos.Length];
                 for (int i = 0; i < paramInfos.Length; i++)
@@ -104,20 +118,20 @@ namespace UConsole
 
                     if (tokens.Length <= paramStartIndex + i)
                     {
-                        Debug.LogWarning("uConsole: not enough parameters provided");
+                        Debug.LogWarning ("uConsole: not enough parameters provided");
                         break;
                     }
                     string paramStr = tokens[paramStartIndex + i];
 
-                    if (paramInfo.ParameterType == typeof(int))
+                    if (paramInfo.ParameterType == typeof (int))
                     {
-                        methodParams[i] = int.Parse(paramStr);
+                        methodParams[i] = int.Parse (paramStr);
                     }
-                    else if (paramInfo.ParameterType == typeof(float))
+                    else if (paramInfo.ParameterType == typeof (float))
                     {
-                        methodParams[i] = float.Parse(paramStr);
+                        methodParams[i] = float.Parse (paramStr);
                     }
-                    else if (paramInfo.ParameterType == typeof(string))
+                    else if (paramInfo.ParameterType == typeof (string))
                     {
                         methodParams[i] = paramStr;
                     }
@@ -125,24 +139,24 @@ namespace UConsole
 
                 if (methodTarget != null)
                 {
-                    method.Invoke(methodTarget, methodParams);
+                    method.Invoke (methodTarget, methodParams);
                 }
             }
         }
 
-        void RefreshSearchResult(string commandStr)
+        void RefreshSearchResult (string commandStr)
         {
             //@todo: state of parser
             foreach (string methodName in methods.Keys)
             {
-                if (methodName.ToLower().Contains(commandStr.ToLower()) && !searchResult.Contains(methodName))
+                if (methodName.ToLower ().Contains (commandStr.ToLower ()) && !searchResult.Contains (methodName))
                 {
-                    searchResult.Add(methodName);
+                    searchResult.Add (methodName);
                 }
             }
         }
 
-        void NavigateSearchResult(KeyCode dirKey)
+        void NavigateSearchResult (KeyCode dirKey)
         {
             if (dirKey == KeyCode.UpArrow)
             {
@@ -163,50 +177,50 @@ namespace UConsole
             scrollVec.y = selectedEntry * searchResultLabelHeight;
         }
 
-        void CloseConsole()
+        void CloseConsole ()
         {
             isActive = false;
             selectedEntry = -1;
             commandStr = string.Empty;
-            searchResult.Clear();
+            searchResult.Clear ();
         }
 
-        void OnGUI()
+        void OnGUI ()
         {
             if (isActive)
             {
-                GUI.FocusControl(seachBarControlName);
+                GUI.FocusControl (seachBarControlName);
 
-                GUI.SetNextControlName(seachBarControlName);
-                var searchBarStyle = new GUIStyle(GUI.skin.textField);
+                GUI.SetNextControlName (seachBarControlName);
+                var searchBarStyle = new GUIStyle (GUI.skin.textField);
                 GUI.skin.textField.fontSize = 32;
                 searchBarStyle.fixedHeight = 0;
-                searchBarStyle.fixedHeight = searchBarStyle.CalcHeight(new GUIContent(commandStr), Screen.width);
-                commandStr = GUI.TextField(new Rect(0, Screen.height - searchBarStyle.fixedHeight, Screen.width, searchBarStyle.fixedHeight), commandStr, searchBarStyle);
+                searchBarStyle.fixedHeight = searchBarStyle.CalcHeight (new GUIContent (commandStr), Screen.width);
+                commandStr = GUI.TextField (new Rect (0, Screen.height - searchBarStyle.fixedHeight, Screen.width, searchBarStyle.fixedHeight), commandStr, searchBarStyle);
 
                 if (GUI.changed)
                 {
-                    if (!string.IsNullOrEmpty(commandStr))
+                    if (!string.IsNullOrEmpty (commandStr))
                     {
                         // toggle search bar 
-                        if ((KeyCode)commandStr.Last() == ActivationKeyBind)
+                        if ((KeyCode) commandStr.Last () == ActivationKeyBind)
                         {
-                            CloseConsole();
+                            CloseConsole ();
                         }
                         else
                         {
-                            RefreshSearchResult(commandStr);
+                            RefreshSearchResult (commandStr);
                         }
                     }
                     else
                     {
-                        searchResult.Clear();
+                        searchResult.Clear ();
                     }
 
                     // navigate through search result
                     if (Event.current.keyCode == KeyCode.UpArrow || Event.current.keyCode == KeyCode.DownArrow)
                     {
-                        NavigateSearchResult(Event.current.keyCode);
+                        NavigateSearchResult (Event.current.keyCode);
                     }
                 }
 
@@ -216,9 +230,9 @@ namespace UConsole
                     // excecute command
                     if (Event.current.keyCode == KeyCode.Return)
                     {
-                        InvokeMethod(commandStr);
+                        InvokeMethod (commandStr);
 
-                        CloseConsole();
+                        CloseConsole ();
                     }
                     // select search result
                     else if (Event.current.keyCode == KeyCode.Tab)
@@ -230,17 +244,17 @@ namespace UConsole
 
                 // search result scrollview
                 float searchResultHeight = searchResultLabelHeight * searchResult.Count;
-                float clampedResultHeight = Mathf.Clamp(searchResultHeight, 0, maxSearchResultCount * searchResultLabelHeight);
+                float clampedResultHeight = Mathf.Clamp (searchResultHeight, 0, maxSearchResultCount * searchResultLabelHeight);
                 float scrollStartY = Screen.height - searchBarStyle.fixedHeight - clampedResultHeight;
-                GUI.Box(new Rect(0, scrollStartY, Screen.width, clampedResultHeight), string.Empty);
+                GUI.Box (new Rect (0, scrollStartY, Screen.width, clampedResultHeight), string.Empty);
                 GUI.skin.label.fontSize = 24;
-                scrollVec = GUI.BeginScrollView(new Rect(0, scrollStartY, Screen.width, clampedResultHeight), scrollVec, new Rect(0, 0, Screen.width, searchResultHeight));
+                scrollVec = GUI.BeginScrollView (new Rect (0, scrollStartY, Screen.width, clampedResultHeight), scrollVec, new Rect (0, 0, Screen.width, searchResultHeight));
                 for (int i = 0; i < searchResult.Count; i++)
                 {
                     GUI.color = (selectedEntry == i) ? Color.yellow : Color.white;
-                    GUI.Label(new Rect(0, i * searchResultLabelHeight, Screen.width, searchResultLabelHeight), searchResult[i]);
+                    GUI.Label (new Rect (0, i * searchResultLabelHeight, Screen.width, searchResultLabelHeight), searchResult[i]);
                 }
-                GUI.EndScrollView();
+                GUI.EndScrollView ();
             }
         }
     }
